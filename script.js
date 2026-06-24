@@ -52,7 +52,7 @@ const devLog = document.getElementById("devLog");
 
    TODO: Replace the line below with your own state variable.
 ---------------------------------------------------------------- */
-let gameState = 0; // <-- rename this and set a starting value
+let streak = 0; // 🔥 Streak Tracker — start with no streak
 
 
 /* ----------------------------------------------------------------
@@ -134,11 +134,9 @@ function handleAnswer() {
   // --------------------------------------------------------------
 
   if (correct) {
-    // TODO: what happens to your game state when the answer is correct?
-    message.textContent = "Correct!";
+    streak++;            // right answer -> streak grows by 1
   } else {
-    // TODO: what happens to your game state when the answer is incorrect?
-    message.textContent = "Try again!";
+    streak = 0;          // wrong answer -> streak resets to 0
   }
 
 
@@ -164,7 +162,19 @@ function handleAnswer() {
   //   }
   // --------------------------------------------------------------
 
-  // TODO: add your milestone if/else if/else chain here
+  // Milestone check — reacts to the SIZE of the streak (the state),
+  // not just the most recent answer. Thresholds chosen by our team.
+  if (streak >= 10) {
+    message.textContent = `🔥🔥🔥 UNSTOPPABLE! ${streak} in a row!`;
+  } else if (streak >= 5) {
+    message.textContent = `🔥 You're on fire! Streak of ${streak}.`;
+  } else if (streak >= 3) {
+    message.textContent = `Streak building... ${streak} correct!`;
+  } else if (streak >= 1) {
+    message.textContent = `Nice! Streak is ${streak}.`;
+  } else {
+    message.textContent = "Streak reset — start a new one!";
+  }
 
 
   // --------------------------------------------------------------
@@ -173,12 +183,12 @@ function handleAnswer() {
   // Remember: changing a variable does NOT change what the player
   // sees. You have to update the DOM separately.
   // --------------------------------------------------------------
-  statValue.textContent = gameState;
+  statValue.textContent = streak;
 
   // This logs to YOUR dev console (in the browser, press F12 to see
   // the real one too) — it's for your team, not the player.
-  console.log("Current state:", gameState, "| Correct?", correct);
-  devLog.textContent = `state = ${gameState} | last answer correct = ${correct}`;
+  console.log("Current streak:", streak, "| Correct?", correct);
+  devLog.textContent = `streak = ${streak} | last answer correct = ${correct}`;
 }
 
 
@@ -194,9 +204,9 @@ function handleAnswer() {
    TODO: Update the starting value below to match Step 2.
 ---------------------------------------------------------------- */
 function handleReset() {
-  gameState = 0; // <-- match this to your starting value from Step 2
+  streak = 0; // matches Step 2 starting value
 
-  statValue.textContent = gameState;
+  statValue.textContent = streak;
   message.textContent = "Press \"Answer\" to begin!";
   devLog.textContent = "Waiting for input...";
 
