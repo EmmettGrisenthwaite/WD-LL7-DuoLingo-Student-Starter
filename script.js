@@ -1,170 +1,103 @@
 /* ================================================================
-   DEVSHOP CHALLENGE — STARTER SCRIPT
-   ================================================================
-   Your job: build the logic behind ONE Duolingo feature.
-
-   Choose ONE:
-     ❤️ Lives System
-     🔥 Streak Tracker
-     🎁 Random Rewards
-     ⭐ XP & Scoring System
-
-   This file is scaffolded in 6 steps, matching the game loop:
-   Player Action -> Game Logic -> Update Game State -> Give Feedback -> Repeat
-
-   Read every comment before you start typing. Replace anything
-   in ALL_CAPS or marked TODO with your own code.
+   DEVSHOP CHALLENGE — STREAK TRACKER 🔥
+   ----------------------------------------------------------------
+   Early-finisher upgrades included:
+     • A 4th+ milestone state (🏆 LEGENDARY at 20, 👑 MAX at the cap)
+     • Compound conditions with &&  (jackpot roll + earning freezes)
+     • Edge cases (streak capped at a max, exact-0 reset)
+     • Bonus logic (rare 🎰 jackpot — a correct answer counts double)
+     • UI variation (the streak number changes color by state)
+     • 🧊 Streak Freeze — absorbs a wrong answer so your streak lives
 ================================================================ */
 
 
-/* ----------------------------------------------------------------
-   STEP 1: GRAB YOUR DOM ELEMENTS
-   ----------------------------------------------------------------
-   JavaScript can't update what it can't see. These lines connect
-   your HTML elements to variables you can control in this file.
-
-   You probably won't need to change this step — these IDs already
-   match index.html.
----------------------------------------------------------------- */
+// STEP 1: GRAB YOUR DOM ELEMENTS
 const statLabel = document.getElementById("statLabel");
 const statValue = document.getElementById("statValue");
 const message = document.getElementById("message");
 const answerBtn = document.getElementById("answerBtn");
 const resetBtn = document.getElementById("resetBtn");
+const freezeBtn = document.getElementById("freezeBtn");
+const extraStats = document.getElementById("extraStats");
 const devLog = document.getElementById("devLog");
 
 
-/* ----------------------------------------------------------------
-   STEP 2: CREATE YOUR GAME STATE VARIABLE(S)
-   ----------------------------------------------------------------
-   This is the ONE piece of information your feature tracks.
-
-   Ask yourself: what number or value changes as the player plays?
-
-   Use `let`, not `const` — this value is going to change!
-
-   Examples (pick the one that matches your feature, or write your own):
-
-     Lives System:     let lives = 3;
-     Streak Tracker:   let streak = 0;
-     Random Rewards:   let lastReward = 0;
-     XP & Scoring:     let xp = 0;
-
-   TODO: Replace the line below with your own state variable.
----------------------------------------------------------------- */
-let streak = 0; // 🔥 Streak Tracker — start with no streak
+// STEP 2: GAME STATE VARIABLES
+let streak = 0;       // 🔥 current streak
+let bestStreak = 0;   // 🏆 record to beat
+let freezes = 0;      // 🧊 streak freezes held in reserve
 
 
-/* ----------------------------------------------------------------
-   STEP 3 (OPTIONAL — Random Rewards teams need this):
-   CREATE AN ARRAY OF POSSIBLE VALUES
-   ----------------------------------------------------------------
-   Arrays store multiple values in one variable. If your feature
-   involves randomness (like surprise rewards), define your
-   options here instead of hardcoding a single value.
-
-   Example:
-     const rewardOptions = [10, 15, 20, 50];
-
-   If your feature does NOT use randomness, you can ignore this
-   step or delete it.
----------------------------------------------------------------- */
-// const rewardOptions = [/* TODO: add your possible values */];
+// STEP 3: CONSTANTS (thresholds + limits)
+const MAX_STREAK = 25;        // edge case: streak can never go above this
+const JACKPOT_CHANCE = 0.1;   // 🎰 10% of correct answers count double
 
 
-/* ----------------------------------------------------------------
-   STEP 4: SIMULATE A "CORRECT" OR "INCORRECT" ANSWER
-   ----------------------------------------------------------------
-   In a real app, this would come from checking user input.
-   For this prototype, we'll randomly decide if the simulated
-   answer is correct — this lets you test your logic by clicking
-   the button repeatedly.
-
-   You don't need to change this — but make sure you understand it!
-     Math.random()       -> a random decimal between 0 and 1
-     Math.random() > 0.5 -> true about half the time, false the rest
----------------------------------------------------------------- */
+// STEP 4: SIMULATE A "CORRECT" OR "INCORRECT" ANSWER
 function isAnswerCorrect() {
   return Math.random() > 0.5;
 }
 
 
-/* ----------------------------------------------------------------
-   STEP 5: BUILD YOUR GAME LOGIC (THE CORE OF YOUR CHALLENGE)
-   ----------------------------------------------------------------
-   This function runs every time the player clicks "Submit Answer."
+// Helper: repaint the screen — number color, freeze count, best streak.
+function updateUI() {
+  statValue.textContent = streak;
 
-   This is where you turn your IF -> THEN plan into real code.
+  // UI VARIATION: color the streak number by which state we're in.
+  if (streak >= 20)      statValue.style.color = "#f5b301"; // gold
+  else if (streak >= 10) statValue.style.color = "#e03131"; // red hot
+  else if (streak >= 5)  statValue.style.color = "#fd7e14"; // orange
+  else if (streak >= 1)  statValue.style.color = "#2f9e44"; // green
+  else                   statValue.style.color = "#868e96"; // grey (zero)
 
-   Before writing code here, finish this sentence on paper or in
-   chat with your team:
+  extraStats.textContent = `🧊 Freezes: ${freezes} · 🏆 Best: ${bestStreak}`;
+}
 
-     IF ________________________
-     THEN ________________________
 
-   Then translate it below. Some starter patterns are shown —
-   delete the ones you don't need and build out your own.
----------------------------------------------------------------- */
+// STEP 5: GAME LOGIC
 function handleAnswer() {
-
   const correct = isAnswerCorrect();
 
-  // --------------------------------------------------------------
-  // TODO: Update your game state based on whether the answer
-  // was correct or incorrect.
-  //
-  // Example pattern (Lives System):
-  //
-  //   if (correct) {
-  //     message.textContent = "Correct! Keep going.";
-  //   } else {
-  //     gameState--;
-  //     message.textContent = "Incorrect! You lost a life.";
-  //   }
-  //
-  // Example pattern (Streak Tracker):
-  //
-  //   if (correct) {
-  //     gameState++;
-  //     message.textContent = `Nice! Streak is now ${gameState}.`;
-  //   } else {
-  //     gameState = 0;
-  //     message.textContent = "Streak reset. Try again!";
-  //   }
-  // --------------------------------------------------------------
+  // BONUS LOGIC + COMPOUND CONDITION (&&): a correct answer occasionally
+  // hits the jackpot and counts DOUBLE — must be correct AND win the roll.
+  const jackpot = correct && Math.random() < JACKPOT_CHANCE;
 
   if (correct) {
-    streak++;            // right answer -> streak grows by 1
+    streak += jackpot ? 2 : 1;
+
+    // EDGE CASE: don't let the streak grow above the max.
+    if (streak >= MAX_STREAK) {
+      streak = MAX_STREAK;
+    }
+
+    // Track the record.
+    if (streak > bestStreak) {
+      bestStreak = streak;
+    }
+
+    // COMPOUND CONDITION (&&): earn a 🧊 freeze on every 5th streak.
+    if (streak >= 5 && streak % 5 === 0) {
+      freezes++;
+    }
   } else {
-    streak = 0;          // wrong answer -> streak resets to 0
+    // 🧊 STREAK FREEZE: a wrong answer normally resets you to 0, but if you
+    // have a freeze in reserve it gets used up and your streak survives.
+    if (freezes > 0 && streak > 0) {
+      freezes--;            // freeze absorbs the loss
+    } else {
+      streak = 0;           // EDGE CASE: back to exactly 0
+    }
   }
 
-
-  // --------------------------------------------------------------
-  // TODO: Add at least ONE more condition that checks a MILESTONE.
-  // This is separate from the correct/incorrect check above —
-  // it reacts to the current STATE, not the most recent action.
-  //
-  // Ask: what happens when gameState reaches a certain number?
-  //
-  // Example (Lives System hitting zero):
-  //
-  //   if (gameState <= 0) {
-  //     message.textContent = "Game Over! Resetting...";
-  //   }
-  //
-  // Example (XP hitting a level-up threshold):
-  //
-  //   if (gameState >= 100) {
-  //     message.textContent = "Level Up! 🎉";
-  //   } else if (gameState >= 50) {
-  //     message.textContent = "Halfway there!";
-  //   }
-  // --------------------------------------------------------------
-
-  // Milestone check — reacts to the SIZE of the streak (the state),
-  // not just the most recent answer. Thresholds chosen by our team.
-  if (streak >= 10) {
+  // MILESTONE CHAIN (uses >= and ===, with 6 outcomes incl. the 4th+ tiers).
+  if (!correct && streak > 0) {
+    // wrong answer but streak survived -> a freeze must have saved it
+    message.textContent = `🧊 Streak Freeze used! Your ${streak} streak is safe.`;
+  } else if (streak >= MAX_STREAK) {
+    message.textContent = `👑 MAX STREAK! You maxed out at ${streak}!`;
+  } else if (streak >= 20) {
+    message.textContent = `🏆 LEGENDARY! ${streak} in a row!`;
+  } else if (streak >= 10) {
     message.textContent = `🔥🔥🔥 UNSTOPPABLE! ${streak} in a row!`;
   } else if (streak >= 5) {
     message.textContent = `🔥 You're on fire! Streak of ${streak}.`;
@@ -176,65 +109,46 @@ function handleAnswer() {
     message.textContent = "Streak reset — start a new one!";
   }
 
+  // Shout about the jackpot on top of whatever message we set.
+  if (jackpot) {
+    message.textContent = "🎰 JACKPOT! Double streak! " + message.textContent;
+  }
 
-  // --------------------------------------------------------------
   // STEP 6: UPDATE THE SCREEN
-  // --------------------------------------------------------------
-  // Remember: changing a variable does NOT change what the player
-  // sees. You have to update the DOM separately.
-  // --------------------------------------------------------------
-  statValue.textContent = streak;
+  updateUI();
 
-  // This logs to YOUR dev console (in the browser, press F12 to see
-  // the real one too) — it's for your team, not the player.
-  console.log("Current streak:", streak, "| Correct?", correct);
-  devLog.textContent = `streak = ${streak} | last answer correct = ${correct}`;
+  console.log("streak:", streak, "| correct?", correct, "| jackpot?", jackpot, "| freezes:", freezes);
+  devLog.textContent = `streak=${streak} | correct=${correct} | jackpot=${jackpot} | freezes=${freezes} | best=${bestStreak}`;
 }
 
 
-/* ----------------------------------------------------------------
-   STEP 7: RESET BUTTON
-   ----------------------------------------------------------------
-   This puts everything back to its starting point.
+// Stock up a 🧊 streak freeze so you can see it protect your streak.
+function handleAddFreeze() {
+  freezes++;
+  message.textContent = `🧊 Streak Freeze added! You now have ${freezes}.`;
+  updateUI();
+}
 
-   Notice the order:
-     1. Reset the STATE (the variable)
-     2. Reset the DOM (what the player sees)
 
-   TODO: Update the starting value below to match Step 2.
----------------------------------------------------------------- */
+// STEP 7: RESET BUTTON (state first, then the screen)
 function handleReset() {
-  streak = 0; // matches Step 2 starting value
+  streak = 0;
+  bestStreak = 0;
+  freezes = 0;
 
-  statValue.textContent = streak;
   message.textContent = "Press \"Answer\" to begin!";
+  updateUI();
   devLog.textContent = "Waiting for input...";
 
   console.log("Game state reset.");
 }
 
 
-/* ----------------------------------------------------------------
-   STEP 8: EVENT LISTENERS
-   ----------------------------------------------------------------
-   This connects your buttons to the functions above.
-   You shouldn't need to change this part.
----------------------------------------------------------------- */
+// STEP 8: EVENT LISTENERS
 answerBtn.addEventListener("click", handleAnswer);
+freezeBtn.addEventListener("click", handleAddFreeze);
 resetBtn.addEventListener("click", handleReset);
 
 
-/* ================================================================
-   ✅ CHECKLIST BEFORE YOU SHOWCASE
-   ================================================================
-   [ ] One state variable that clearly represents your feature
-   [ ] At least 2 comparison operators used (>, <, >=, <=, ===)
-   [ ] An if / else (or if / else if / else) chain with 3+ outcomes
-   [ ] Feedback message updates for the player
-   [ ] statLabel in index.html renamed to match your feature
-   [ ] Reset button correctly returns everything to start values
-
-   Stuck? Re-read Slide 4 (Example Game Logic) and Slide 7
-   (Think Like a Game Designer) — your IF -> THEN sentence should
-   turn almost directly into the if-statement you need here.
-================================================================ */
+// Paint the starting state when the page loads.
+updateUI();
